@@ -1,0 +1,10 @@
+language: scala
+scala:
+- 2.11.4
+jdk:
+- oraclejdk7
+env:
+  global:
+  - secure: VmcTMBezyi6b8b3W+tED7ptBZrXrT4nNpghyf9geajI55fpd/GAOtjeAYzl4zUhKUHX26BAj4bjsg9n9DRJ4My/ElPi/UyU7Q6zm+17ZknmPjf3qsnb4oXSgSqh2NBOx4+vHDgjuFz+su+BOyLzSghXEkihGb4QWgpkrXs/Fod8=
+  - secure: dluAPjaq7VBSmuU1jFBbQziAw9kZeLEFwOV5YF79YAW3FyuIFbqzs0xp+qdj3Zkc5111jdE6HWSFTU4ptl5993egDrSwsFiAVdMMNMnhBBqSSOsjmbkn9woqMCFR7xuCMYhCzMJM0zM+xNRYGrD1KmFOL0UhKWWscGscWd2u6eg=
+  - secure: RATtTAWYDaViXy/Xj3Te3dcf33vNVxtZygms7fF3uBjfWElu9LSG+ZP8X3Tw+WeRImfOJkiTwN8QecQoNGsC/De1qJpUVHTnQwqRdRqA9yGGTE17NMcyD01hntzgviX/uuDxEqB0CTsZbZKp3okZMcRUaBNykTgd420eIpPdokE=
