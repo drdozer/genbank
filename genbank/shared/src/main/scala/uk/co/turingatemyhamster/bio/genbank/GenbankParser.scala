@@ -2,6 +2,7 @@ package uk.co.turingatemyhamster.bio
 package genbank
 
 import fastparse.all._
+import fastparse.core.Mutable.Success
 
 
 
@@ -15,6 +16,9 @@ object GenbankParser {
 
   val newline = "\r\n" | "\r" | "\n"
   val space = " "
+  val period = "."
+  val comma = ","
+  val hyphen = "-"
   val spaces = space.rep(1)
   val spaces_? = space.rep
   val notSpace = !" "~AnyChar
@@ -32,7 +36,7 @@ object GenbankParser {
   val letter =  lowerCase | upperCase
   val letters = letter.rep(1)
   val dblQuot = "\""
-  val dblDblQuot = "\"\""
+  val sglQuot = "'"
 
   val blankLine = spaces_? ~ newline
   val DMY = P(DD ~ "-" ~ MMM ~ "-" ~ YYYY)
@@ -119,21 +123,21 @@ object GenbankParser {
   lazy val Link = P((!":" ~ AnyChar).rep(1).! ~ ":" ~ spaces ~ CrossRefIds) map genbank.Link.tupled
 
   lazy val CrossRefIds = P(
-    (!space ~ !newline ~ !"," ~ AnyChar).rep(1).!.rep(min = 1, sep = "," ~ (spaces | (newline ~ stansaIndent)))
+    (!space ~ !newline ~ !comma ~ AnyChar).rep(1).!.rep(min = 1, sep = comma ~ (spaces | (newline ~ stansaIndent)))
   )
 
-  lazy val SemiColonPeriodList = P(SemiColonPeriodEntry.rep(sep=";" ~ spaces_?)) ~ "."
+  lazy val SemiColonPeriodList = P(SemiColonPeriodEntry.rep(sep=";" ~ spaces_?)) ~ period
 
   lazy val SemiColonPeriodEntry = P(
     (SemiColonPeriodSpan | SemiColonPeriodLineWrap).rep(1).map(_.mkString)
   )
 
   lazy val SemiColonPeriodSpan = P(
-    (!newline ~ !";" ~ !("." ~ &(newline)) ~ AnyChar).rep(1).!
+    (!newline ~ !";" ~ !(period ~ &(newline)) ~ AnyChar).rep(1).!
   )
 
   lazy val SemiColonPeriodLineWrap = P(
-    ".".!.? ~ newline ~ stansaIndent
+    period.!.? ~ newline ~ stansaIndent
   ) map (_ getOrElse "")
 
   lazy val Keywords = P(
@@ -169,8 +173,8 @@ object GenbankParser {
     keyword("REFERENCE") ~ AnInt ~ ReferenceCoverage ~ newline
   )
 
-  lazy val spacesOrLineWrap = P(
-    (spaces | lineWrap).rep(1)
+  lazy val lsep = P(
+    spaces | lineWrap
   )
 
   lazy val lineWrap = P(newline ~ stansaIndent)
@@ -178,7 +182,7 @@ object GenbankParser {
   lazy val ReferenceCoverage = P( (spaces ~ "(" ~ (Bases | Sites) ~ ")").? ) map (_ getOrElse Seq.empty)
 
   lazy val Bases = P(
-    "bases" ~/ spacesOrLineWrap ~ BaseRange.rep(min = 1, sep = ";" ~/ spacesOrLineWrap)
+    "bases" ~/ lsep ~ BaseRange.rep(min = 1, sep = ";" ~/ lsep)
   )
 
   lazy val Sites = P(
@@ -186,69 +190,88 @@ object GenbankParser {
   )
 
   lazy val BaseRange = P(
-    AnInt ~ spacesOrLineWrap ~ "to" ~/ spacesOrLineWrap ~ AnInt
+    AnInt ~ lsep ~ "to" ~/ lsep ~ AnInt
   ) map genbank.BaseRange.tupled
 
   lazy  val ReferenceAuthors = P(
-    subkeyword("AUTHORS") ~ AuthorList ~ ".".? ~ newline
+    subkeyword("AUTHORS") ~ AuthorList ~ period.? ~ newline
   )
 
   lazy val AuthorList = P(
-    Author.rep(min = 1, sep = (",".rep(1) ~ spacesOrLineWrap) | (spacesOrLineWrap ~ "and" ~/ spacesOrLineWrap))
-  )
+    FinalAuthor.map(a => genbank.AuthorList(Seq(a), false)) |
+      (AuthorListL ~ (AndAuthor | EtAl)).map { case (al, f) => f(al) }
+  ) log "AuthorList"
 
-  lazy val Author = P(
-    Author_WellFormed |
-       Author_BrokenInitial |
-       Author_BrokenNameInitials |
-       Author_OnlyFirstname |
-       Author_InitialsThenName |
-       Author_OnlyInitials
-  ) map genbank.Author.tupled
+  lazy val AuthorListL: P[genbank.AuthorList] = P(
+    Author.rep(min = 1, sep = ("," ~ ",".? ~ lsep).~/ | lineWrap)
+  ) map (genbank.AuthorList(_, false)) log "AuthorListL"
 
-  lazy val Author_WellFormed = P(
-    FirstName.map(Some.apply) ~ ((".".? ~ ",") | lineWrap) ~ Initials ~ (spacesOrLineWrap ~ NameNumber).?
-  )
+  lazy val FinalAuthor = P(Author ~ period ~ newline ~ !stansaIndent)
 
-  lazy val Author_InitialsThenName = P(
-    Initials ~ spaces_? ~ FirstName ~ &(("," ~ (spaces | newline)) | " and" | ("." ~ newline ~ !stansaIndent))
-  ) map { case (is, fn) => (Some(fn), is, None) }
+  lazy val Author: P[genbank.Author] = P(
+    WellFormedAuthor |
+      NameWithTrailingSpace |
+      NameWithNamesInInitials |
+      InitialsThenName |
+      FamilyNameOnly
+  ) log "Author"
 
-  lazy val Author_BrokenInitial = P(
-    FirstName ~ "," ~ (!"," ~ !newline ~ !"." ~ !" " ~ AnyChar).! ~ &(",")
-  ).map { case (f, i) => (Some(f), Seq(i), None) }
+  lazy val WellFormedAuthor = P(
+    FamilyName ~ (comma | (period ~ comma.?) | (newline ~ stansaIndent) ) ~ Initials ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
+  ) map { case (fn, is, nn) => genbank.Author(Some(fn), is, nn) } log "WellFormedAuthor"
 
-  lazy val Author_OnlyFirstname = P(
-    FirstName.map(n => (Some(n), Seq(), None)) ~ (&(",") | &("." ~ newline) | &(spacesOrLineWrap ~ "and" ~/ spacesOrLineWrap))
-  )
+  lazy val NameWithTrailingSpace = P(
+    FamilyName ~ (comma | period) ~ space ~ Initials ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
+  ) map { case (fn, is, nn) => genbank.Author(Some(fn), is, nn) } log "NameWithTrailingSpace"
 
-  lazy val Author_OnlyInitials = P(
-    Initials map ((None, _, None))
-  )
+  lazy val NameWithNamesInInitials = P(
+    FamilyName ~ comma ~ InitialsWithNamesIn ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
+  ) map { case (fn, is, nn) => genbank.Author(Some(fn), is, nn) } log "NameWithNamesInInitials"
 
-  lazy val Author_BrokenNameInitials = P(
-    BrokenFirstName ~ ". " ~ Initials
-  ) map { case (f, i) => (Some(f), i, None) }
+  lazy val FamilyNameOnly = P(
+    FamilyName ~ (&(thenNameEnding) | &(lineWrap))
+  ) map (fn => genbank.Author(Some(fn), Seq(), None)  ) log "FamilyNameOnly"
 
-  lazy val FirstName = P(
-    nameChar.rep(1).! ~ (lineWrap.map(_ => " ") ~ nameChar.rep(1).! ~ &("," | " and")).?
-  ) map { case (n1, n2) => n2.fold(n1) { case(n, nr) => n1 + n + nr } }
+  lazy val InitialsThenName = P(
+    Initials ~ lsep ~ FamilyName ~ &(thenNameEnding)
+  ) map { case (is, fn) => genbank.Author(Some(fn), is, None) } log "InitialsThenName"
 
-  lazy val nameChar = P(!"," ~ (". " | (!newline ~ !"." ~ !" and" ~ AnyChar)))
+  lazy val FamilyName = P(
+    CompoundName |
+    SimpleName
+  ) log "FamilyName"
 
-  lazy val BrokenFirstName = P(
-    (!"," ~ (!newline ~ !"." ~ !" and" ~ AnyChar)).rep(1).!
-  )
+  lazy val SimpleName = P( ((letter log "firstLetter") ~ (letter | hyphen | sglQuot).log("insideLetter").rep(1)).!.log("letters") ) log "SimpleName"
 
-  lazy val Initials = P((Initial ~ ".").rep(1))
+  lazy val CompoundName = P(
+    ((upperCase ~ lowerCase.rep(1) ~ period).! | (letter ~ lowerCase.rep).!) ~ lsep ~ SimpleName
+  ) map { case (pfx, sfx) => s"$pfx $sfx" } log "CompoundName"
 
-  lazy val Initial = P(
-    (lineWrap ~ !"and " ~ !NameNumber).? ~ !"," ~ !" " ~ (!newline ~ !"." ~ !" and" ~ AnyChar ~ !",").rep(1).!
-  )
+  lazy val Initials = P( (Initial ~ (&(thenEndingComma) | (period.? ~ comma ~ &(upperCase)) | period)).rep(1) ) log "Initials"
 
-  lazy val NameNumber = P(
-    !"and" ~ (!"," ~ !" " ~ !newline ~ AnyChar).rep(1).!
-  )
+  lazy val Initial = P((hyphen.? ~ upperCase).!) log "Initial"
+
+  lazy val InitialsWithNamesIn = P(
+    Initials ~ FamilyName ~ period ~ Initials
+  ) map { case (i1, fn, i2) => (i1 :+ fn) ++ i2 } log "InitialsWithNamesIn"
+
+  lazy val NameNumber = P( (upperCase ~ letter.rep(1) ~ period.?).! ~ &(thenNameEnding)) log "NameNumber"
+
+  lazy val listAnd = P( lsep ~ "and") log "listAnd"
+
+  lazy val listEt = P( lsep ~ "et") log "listEt"
+
+  lazy val AndAuthor = P( lsep ~ "and" ~/ lsep ~ Author) map (postpendAuthor _) log "AndAuthor"
+
+  lazy val EtAl = P( lsep ~ "et" ~ lsep ~ "al." ) map (_ => withEtAl _) log "EtAl"
+
+  private def prependAuthor(au: genbank.Author) = (al: genbank.AuthorList) => al.copy(authors = au +: al.authors)
+  private def postpendAuthor(au: genbank.Author) = (al: genbank.AuthorList) => al.copy(authors = al.authors :+ au)
+  private def withEtAl(al: genbank.AuthorList) = al.copy(etAl = true)
+
+  lazy val thenEndingComma = P(comma ~ !letter)
+
+  lazy val thenNameEnding = P(thenEndingComma | listAnd | listEt | (period.? ~ newline ~ !stansaIndent))
 
   lazy val ReferenceConsortium = P(
     subkeyword("CONSRTM") ~ multiline(notNewlines).! ~ newline
@@ -299,7 +322,7 @@ object GenbankParser {
   lazy val Operation = P( Complement | Join | Order )
 
   lazy val RemoteReference = P(
-    ( upperCase ~ (upperCase | digit | ".").rep).! ~ ":" ~/ Position
+    ( upperCase ~ (upperCase | digit | period).rep).! ~ ":" ~/ Position
   ) map genbank.Location.RemoteReference.tupled
 
   lazy val Span = P(
@@ -307,7 +330,7 @@ object GenbankParser {
   ) map genbank.Location.Span.tupled
 
   lazy val OneOf = P(
-    SingleBase ~ "." ~ SingleBase
+    SingleBase ~ period ~ SingleBase
   ) map genbank.Location.OneOf.tupled
 
   lazy val Cut = P(
@@ -333,11 +356,11 @@ object GenbankParser {
   ) map genbank.Location.Complement
 
   lazy val Join: Parser[genbank.Location.Join] = P(
-    "join(" ~/ Location.rep(min=1, sep="," ~ (newline ~ featureQualifierIndent).?) ~ ")"
+    "join(" ~/ Location.rep(min=1, sep=comma ~ (newline ~ featureQualifierIndent).?) ~ ")"
   ) map genbank.Location.Join
 
   lazy val Order: Parser[genbank.Location.Order] = P(
-    "order(" ~/ Location.rep(min=1, sep="," ~ (newline ~ featureQualifierIndent).?) ~ ")"
+    "order(" ~/ Location.rep(min=1, sep=comma ~ (newline ~ featureQualifierIndent).?) ~ ")"
   ) map genbank.Location.Order
 
   lazy val Qualifier = P(
@@ -379,7 +402,7 @@ object GenbankParser {
   ) map genbank.Contig
 
   lazy val ContigParts = P(
-    ContigPart.rep(min = 1, sep = "," ~/ (lineWrap).?)
+    ContigPart.rep(min = 1, sep = comma ~/ (lineWrap).?)
   )
 
   lazy val ContigPart = P(
@@ -407,7 +430,7 @@ object GenbankParser {
   ) map genbank.ContigPart.Complement
 
   lazy val ContigRemoteReference = P(
-    ( upperCase ~ (upperCase | digit | ".").rep).! ~ ":" ~/ ContigSpan
+    ( upperCase ~ (upperCase | digit | period).rep).! ~ ":" ~/ ContigSpan
   ) map genbank.ContigPart.RemoteReference.tupled
 
   lazy val ContigSpan = P(

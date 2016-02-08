@@ -22,7 +22,7 @@ object ReadChunked {
         process(arg, io.Source.fromFile(arg)(
           Codec.UTF8.onMalformedInput(CodingErrorAction.IGNORE))) // some genbank files are broken e.g. gbbct205.seq.gz
       }
-      println("done")
+      println(s"Done $arg")
     }
   }
 
@@ -61,9 +61,9 @@ object ReadChunked {
           case _ =>
         }
       } catch {
-        case e: Exception =>
+        case t: Throwable =>
           println(s"Parse failed for $fileName\n${c.take(200)}")
-          e.printStackTrace(System.out)
+          t.printStackTrace(System.out)
       }
     }
 
@@ -76,9 +76,9 @@ object ReadChunked {
           case _ =>
         }
       } catch {
-        case e : Exception =>
+        case t : Throwable =>
           println(s"Parse failed for $fileName\n${c.take(200)}")
-          e.printStackTrace(System.out)
+          t.printStackTrace(System.out)
       }
     }
   }

@@ -52,13 +52,15 @@ case class Organism(name: String, values: Seq[String])
 
 case class Reference(number: Int,
                      bases: Seq[BaseRange],
-                     authors: Option[Seq[Author]],
+                     authors: Option[AuthorList],
                      consortium: Seq[Consortium],
                      title: Option[String],
                      journal: String,
                      medline: Option[Int],
                      pubmed: Option[Int],
                      remark: Option[String])
+
+case class AuthorList(authors: Seq[Author], etAl: Boolean)
 
 case class Author(name: Option[String], initials: Seq[String], numeral: Option[String])
 
