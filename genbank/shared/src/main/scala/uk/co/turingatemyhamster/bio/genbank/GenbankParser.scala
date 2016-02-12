@@ -241,7 +241,7 @@ object GenbankParser {
     SimpleName
   ) log "FamilyName"
 
-  lazy val SimpleName = P( ((letter log "firstLetter") ~ (letter | hyphen | sglQuot).log("insideLetter").rep(1)).!.log("letters") ) log "SimpleName"
+  lazy val SimpleName = P( ((letter log "firstLetter") ~ (letter.log("l") | hyphen.log("h") | sglQuot.log("sglQ")).log("insideLetter").rep(1, sep = "".log("insideLetterSep"))).!.log("letters") ) log "SimpleName"
 
   lazy val CompoundName = P(
     ((upperCase ~ lowerCase.rep(1) ~ period).! | (letter ~ lowerCase.rep).!) ~ lsep ~ SimpleName
