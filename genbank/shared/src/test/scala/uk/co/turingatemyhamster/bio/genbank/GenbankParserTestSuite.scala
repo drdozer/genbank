@@ -13,7 +13,7 @@ import fastparse.core.Parsed.Failure
 object GenbankParserTestSuite extends TestSuite {
 
   val tests = TestSuite {
-/*
+
     'locations {
 
       'SingleBase {
@@ -511,6 +511,21 @@ object GenbankParserTestSuite extends TestSuite {
     }
 
     'author {
+
+      * - {
+        val txt = "R.B.Aronson,"
+        val auth = parse(GenbankParser.InitialsThenName, txt)
+        assert(auth.name.get == "Aronson")
+        assert(auth.initials == Seq("R", "B"))
+      }
+
+      * - {
+        val txt = "R.B.Aronson,"
+        val auth = parse(GenbankParser.Author, txt)
+        assert(auth.name.get == "Aronson")
+        assert(auth.initials == Seq("R", "B"))
+      }
+
       * - {
         val txt = "Duan,J.B.,"
         val auth = parse(GenbankParser.Author, txt)
@@ -528,62 +543,73 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "Mathur,P. and St. Leger,R.J."
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Mathur"), Seq("P"), None))
+        assert(auth == Author(Some("Mathur"), Seq("P"), None, None))
       }
 
       * - {
         val txt = "Michelangelo,S.Moerland.M.M., "
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Michelangelo"), Seq("S", "Moerland", "M", "M"), None))
+        assert(auth == Author(Some("Michelangelo"), Seq("S", "Moerland", "M", "M"), None, None))
       }
 
       * - {
         val txt = "Vu.J., "
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Vu"), Seq("J"), None))
+        assert(auth == Author(Some("Vu"), Seq("J"), None, None))
       }
 
       * - {
         val txt = "Shveta, "
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Shveta"), Seq(), None))
+        assert(auth == Author(Some("Shveta"), Seq(), None, None))
       }
 
       * - {
         val txt = "Shveta, Singh,D.P."
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Shveta"), Seq(), None))
+        assert(auth == Author(Some("Shveta"), Seq(), None, None))
       }
 
       * - {
         val txt = "Kupko,J.J. III,\n            "
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Kupko"), Seq("J", "J"), Some("III")))
+        assert(auth == Author(Some("Kupko"), Seq("J", "J"), Some("III"), None))
       }
 
       * - {
         val txt = "Sheffield,V, Weber"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Sheffield"), Seq("V"), None))
+        assert(auth == Author(Some("Sheffield"), Seq("V"), None, None))
       }
 
       * - {
         val txt = "da Silva,W. Jr.,"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("da Silva"), Seq("W"), Some("Jr.")))
+        assert(auth == Author(Some("da Silva"), Seq("W"), Some("Jr."), None))
       }
 
       * - {
         val txt = """Clarridge,J.E.
                     |            III and Cookson, B.T.""".stripMargin
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Clarridge"), Seq("J", "E"), Some("III")))
+        assert(auth == Author(Some("Clarridge"), Seq("J", "E"), Some("III"), None))
       }
 
       * - {
         val txt = "Arthi,S., Shobana and Ananthi."
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Arthi"), Seq("S"), None))
+        assert(auth == Author(Some("Arthi"), Seq("S"), None, None))
+      }
+
+      * - {
+        val txt = "Shobana and Ananthi."
+        val auth = parse(GenbankParser.SimpleName, txt)
+        assert(auth == "Shobana")
+      }
+
+      * - {
+        val txt = "Shobana and Ananthi."
+        noParse(GenbankParser.CompoundName, txt)
       }
 
       * - {
@@ -601,55 +627,55 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "Shobana and Ananthi."
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Shobana"), Seq(), None))
+        assert(auth == Author(Some("Shobana"), Seq(), None, None))
       }
 
       * - {
         val txt = "Sukenik. A.,"
         val auth = parse(GenbankParser.NameWithTrailingSpace, txt)
-        assert(auth == Author(Some("Sukenik"), Seq("A"), None))
+        assert(auth == Author(Some("Sukenik"), Seq("A"), None, None))
       }
 
       * - {
         val txt = "Sukenik. A.,"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Sukenik"), Seq("A"), None))
+        assert(auth == Author(Some("Sukenik"), Seq("A"), None, None))
       }
 
       * - {
         val txt = "S.L. Miller.\n"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Miller"), Seq("S", "L"), None))
+        assert(auth == Author(Some("Miller"), Seq("S", "L"), None, None))
       }
 
       * - {
         val txt = "Hoiby.,N.\n"
         val auth = parse(GenbankParser.WellFormedAuthor, txt)
-        assert(auth == Author(Some("Hoiby"), Seq("N"), None))
+        assert(auth == Author(Some("Hoiby"), Seq("N"), None, None))
       }
 
       * - {
         val txt = "Hoiby.,N.\n"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Hoiby"), Seq("N"), None))
+        assert(auth == Author(Some("Hoiby"), Seq("N"), None, None))
       }
 
       * - {
         val txt = "Schell,M.,A.\n"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Schell"), Seq("M", "A"), None))
+        assert(auth == Author(Some("Schell"), Seq("M", "A"), None, None))
       }
 
       * - {
         val txt = "Siegele,D,A.,\n"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Siegele"), Seq("D", "A"), None))
+        assert(auth == Author(Some("Siegele"), Seq("D", "A"), None, None))
       }
 
       * - {
         val txt = "Singh,J.A,"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Singh"), Seq("J", "A"), None))
+        assert(auth == Author(Some("Singh"), Seq("J", "A"), None, None))
       }
 
       * - {
@@ -661,7 +687,7 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "St. Leger,R.J.\n"
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("St. Leger"), Seq("R", "J"), None))
+        assert(auth == Author(Some("St. Leger"), Seq("R", "J"), None, None))
       }
 
       * - {
@@ -669,7 +695,31 @@ object GenbankParserTestSuite extends TestSuite {
                     |            III and Cookson,B.T.
                     |""".stripMargin
         val auth = parse(GenbankParser.Author, txt)
-        assert(auth == Author(Some("Clarridge"), Seq("J", "E"), Some("III")))
+        assert(auth == Author(Some("Clarridge"), Seq("J", "E"), Some("III"), None))
+      }
+
+      * - {
+        val txt = "DAS GUPTA,T."
+        val auth = parse(GenbankParser.upperCases.! ~ !GenbankParser.thenNameEnding, txt)
+        assert(auth == "DAS")
+      }
+
+      * - {
+        val txt = "DAS GUPTA,T."
+        val auth = parse(GenbankParser.CompoundNamePrefix, txt)
+        assert(auth == "DAS")
+      }
+
+      * - {
+        val txt = "DAS GUPTA,T."
+        val auth = parse(GenbankParser.CompoundName, txt)
+        assert(auth == "DAS GUPTA")
+      }
+
+      * - {
+        val txt = "DAS GUPTA,T.\n"
+        val auth = parse(GenbankParser.Author, txt)
+        assert(auth == Author(Some("DAS GUPTA"), Seq("T"), None, None))
       }
 
     }
@@ -690,14 +740,14 @@ object GenbankParserTestSuite extends TestSuite {
         val txt = "Screen,S.E., Mathur,P. and St. Leger,R.J.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
         assert(auths == AuthorList(Seq(
-          Author(Some("Screen"), Seq("S", "E"), None),
-          Author(Some("Mathur"), Seq("P"), None),
-          Author(Some("St. Leger"), Seq("R", "J"), None)
+          Author(Some("Screen"), Seq("S", "E"), None, None),
+          Author(Some("Mathur"), Seq("P"), None, None),
+          Author(Some("St. Leger"), Seq("R", "J"), None, None)
         ), false))
       }
 
       * - {
-        val txt = "Vu.J., Vujicic,M., Church,D.M., "
+        val txt = "Vu.J., Vujicic,M., Church,D.M. and"
         val auths = parse(GenbankParser.AuthorListL, txt)
         assert(auths.authors.size == 3)
       }
@@ -706,11 +756,11 @@ object GenbankParserTestSuite extends TestSuite {
         val txt = "Murray,J., Sheffield,V, Weber,J.L., Duyk,G. and Buetow,K.H.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
         assert(auths == AuthorList(Seq(
-          Author(Some("Murray"), Seq("J"), None),
-          Author(Some("Sheffield"), Seq("V"), None),
-          Author(Some("Weber"), Seq("J", "L"), None),
-          Author(Some("Duyk"), Seq("G"), None),
-          Author(Some("Buetow"), Seq("K", "H"), None)
+          Author(Some("Murray"), Seq("J"), None, None),
+          Author(Some("Sheffield"), Seq("V"), None, None),
+          Author(Some("Weber"), Seq("J", "L"), None, None),
+          Author(Some("Duyk"), Seq("G"), None, None),
+          Author(Some("Buetow"), Seq("K", "H"), None, None)
         ), false))
       }
 
@@ -718,9 +768,9 @@ object GenbankParserTestSuite extends TestSuite {
         val txt = "Rana,S., Shveta, Singh,D.P.,"
         val auths = parse(GenbankParser.AuthorListL, txt)
         assert(auths == AuthorList(Seq(
-          Author(Some("Rana"), Seq("S"), None),
-          Author(Some("Shveta"), Seq(), None),
-          Author(Some("Singh"), Seq("D", "P"), None)
+          Author(Some("Rana"), Seq("S"), None, None),
+          Author(Some("Shveta"), Seq(), None, None),
+          Author(Some("Singh"), Seq("D", "P"), None, None)
         ), false))
       }
 
@@ -730,7 +780,7 @@ object GenbankParserTestSuite extends TestSuite {
                     |""".stripMargin
         val auths = parse(GenbankParser.AuthorListL, txt)
         assert(auths == AuthorList(Seq(
-          Author(Some("Clarridge"), Seq("J", "E"), Some("III"))
+          Author(Some("Clarridge"), Seq("J", "E"), Some("III"), None)
         ), false))
       }
 
@@ -740,33 +790,21 @@ object GenbankParserTestSuite extends TestSuite {
                     |""".stripMargin
         val auths = parse(GenbankParser.AuthorList, txt)
         assert(auths == AuthorList(Seq(
-          Author(Some("Clarridge"), Seq("J", "E"), Some("III")),
-          Author(Some("Cookson"), Seq("B", "T"), None)
+          Author(Some("Clarridge"), Seq("J", "E"), Some("III"), None),
+          Author(Some("Cookson"), Seq("B", "T"), None, None)
         ), false))
       }
 
       * - {
         val txt = "Arthi,S., Shobana and Ananthi.\n"
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Arthi"), Seq("S"), None))
-      }
-
-      * - {
-        val txt = "Shobana and Ananthi.\n"
-        val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Shobana"), Seq(), None))
-      }
-
-      * - {
-        val txt = "Ananthi.\n"
-        val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Ananthi"), Seq(), None))
+        assert(auths == Author(Some("Arthi"), Seq("S"), None, None))
       }
 
       * - {
         val txt = "Arthi,S., Shobana and Ananthi.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
-        assert(auths == AuthorList(Seq(Author(Some("Arthi"), Seq("S"), None), Author(Some("Shobana"), Seq(), None), Author(Some("Ananthi"), Seq(), None)), false))
+        assert(auths == AuthorList(Seq(Author(Some("Arthi"), Seq("S"), None, None), Author(Some("Shobana"), Seq(), None, None), Author(Some("Ananthi"), Seq(), None, None)), false))
       }
 
       * - {
@@ -778,13 +816,13 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "Gala\n            J.-L.\n"
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Gala"), Seq("J", "-L"), None))
+        assert(auths == Author(Some("Gala"), Seq("J", "-L"), None, None))
       }
 
       * - {
         val txt = "Philippe,M. and Gala\n            J.-L.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
-        assert(auths == AuthorList(Seq(Author(Some("Philippe"), Seq("M"), None), Author(Some("Gala"), Seq("J", "-L"), None)), false))
+        assert(auths == AuthorList(Seq(Author(Some("Philippe"), Seq("M"), None, None), Author(Some("Gala"), Seq("J", "-L"), None, None)), false))
       }
 
       * - {
@@ -796,49 +834,121 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "Valli\n            Nachiyar and Rose, C."
         val auths = parse(GenbankParser.FamilyNameOnly, txt)
-        assert(auths == Author(Some("Valli Nachiyar"), Seq(), None))
+        assert(auths == Author(Some("Valli Nachiyar"), Seq(), None, None))
       }
 
       * - {
         val txt = "Valli\n            Nachiyar and Rose, C."
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Valli Nachiyar"), Seq(), None))
+        assert(auths == Author(Some("Valli Nachiyar"), Seq(), None, None))
       }
 
       * - {
         val txt = "Valli\n            Nachiyar and Rose, C."
         val auths = parse(GenbankParser.AuthorListL, txt)
-        assert(auths == AuthorList(Seq(Author(Some("Valli Nachiyar"), Seq(), None)), false))
+        assert(auths == AuthorList(Seq(Author(Some("Valli Nachiyar"), Seq(), None, None)), false))
       }
 
       * - {
         val txt = "Valli\n            Nachiyar and Rose, C.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
-        assert(auths == AuthorList(Seq(Author(Some("Valli Nachiyar"), Seq(), None), Author(Some("Rose"), Seq("C"), None)), false))
+        assert(auths == AuthorList(Seq(Author(Some("Valli Nachiyar"), Seq(), None, None), Author(Some("Rose"), Seq("C"), None, None)), false))
       }
 
       * - {
         val txt = "Frere,J.M. et al.\n"
         val auths = parse(GenbankParser.AuthorList, txt)
-        assert(auths == AuthorList(Seq(Author(Some("Frere"), Seq("J", "M"), None)), true))
+        assert(auths == AuthorList(Seq(Author(Some("Frere"), Seq("J", "M"), None, None)), true))
       }
 
       * - {
         val txt = "Singh,J.A, Sprott,D. and Tinker,N.A."
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Singh"), Seq("J", "A"), None))
+        assert(auths == Author(Some("Singh"), Seq("J", "A"), None, None))
       }
 
       * - {
         val txt = "Wang,L.H.,,"
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("Wang"), Seq("L", "H"), None))
+        assert(auths == Author(Some("Wang"), Seq("L", "H"), None, None))
+      }
+
+      * - {
+        val txt = "O' TOOLE,M.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O' TOOLE"), Seq("M"), None, None))
+      }
+
+      * - {
+        val txt = "O'BRIEN,A.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O'BRIEN"), Seq("A"), None, None))
+      }
+
+      * - {
+        val txt = "IBARROLA LOPEZ DE DAVALILLO,I.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("IBARROLA LOPEZ DE DAVALILLO"), Seq("I"), None, None))
+      }
+
+      * - {
+        val txt = "GARCIA LOPEZ ERNESTO,[.E.S.].,"
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("GARCIA LOPEZ ERNESTO"), Seq(), None, Some("ES")))
+      }
+
+      * - {
+        val txt = "GARCIA LOPEZ ERNESTO,[.E.S.].,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("GARCIA LOPEZ ERNESTO"), Seq(), None, Some("ES")))
+      }
+
+      * - {
+        val txt = "CARY STEPHEN P L,[.U.S.].,"
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("CARY STEPHEN P L"), Seq(), None, Some("US")))
+      }
+
+      * - {
+        val txt = "CARY STEPHEN P L,[.U.S.].,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("CARY STEPHEN P L"), Seq(), None, Some("US")))
+      }
+
+      * - {
+        val txt = "VAN TRUNG CHU,(.V.N.).\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("VAN TRUNG CHU"), Seq(), None, Some("VN")))
+      }
+
+      * - {
+        val txt = "PALAZ0N GARCIA,F.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("PALAZ0N GARCIA"), Seq("F"), None, None))
+      }
+
+      * - {
+        val txt = "O'BRIEN,A.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O'BRIEN"), Seq("A"), None, None))
+      }
+
+      * - {
+        val txt = "O'BRIEN SIMPSON,N.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O'BRIEN SIMPSON"), Seq("N"), None, None))
+      }
+
+      * - {
+        val txt = "GLA?KLER,J. and MERTES,F."
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("GLA?KLER"), Seq("J"), None, None))
       }
 
     }
-*/
+
     'authors {
-/*      * - {
+      * - {
           val txt =
           """  AUTHORS   McPherson,J.D., Apostol,B., Wagner-McPherson,C.B., Hakim,S., Del
             |            Mastro,R.G., Aziz,N., Baer,E., Gonzales,G., Krane,M.C.,
@@ -895,7 +1005,7 @@ object GenbankParserTestSuite extends TestSuite {
         parse(GenbankParser.ReferenceAuthors, txt)
 
       }
-*/
+
       * - {
         val txt =
           """  AUTHORS   Kuramoto,T., Kitada,K., Inui,T., Sasaki,Y., Ito,K., Hase,T.,
@@ -984,8 +1094,115 @@ object GenbankParserTestSuite extends TestSuite {
             |""".stripMargin
         parse(GenbankParser.ReferenceAuthors, txt)
       }
+
+      * - {
+        val txt =
+          """  AUTHORS   Walbot,V.
+            |  TITLE     Maize ESTs from various cDNA libraries sequenced at Stanford
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   GARCIA LOPEZ ERNESTO,[.E.S.]., GARCIA GONZALEZ PEDRO,[.E.S.].,
+            |            GARCIA LOPEZ JOSE LUIS,[.E.S.]., CAMPUZANO RUIZ SUSANA,[.E.S.].,
+            |            MORALES AREIZAGA MARIA,[.E.S.]., ARDUNAY TISAIRE MARIA
+            |            CARMEN,[.E.S.]., PINGARRON CARRAZON JOSE MANUEL,[.E.S.]. and
+            |            PEDRERO MUNOZ MARIA,[.E.S.].
+            |  TITLE     DETECTION OF STREPTOCOCCUS PNEUMONIAE THROUGH MAGNETO-AMPEROMETRIC
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   BEATTIE,C., YAMADA,T. and DAS GUPTA,T.
+            |  TITLE     COMPOSITIONS AND METHODS TO PREVENT CANCER BY STABILIZING P53
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   FOUSER,L., HEGEN,M., LUXENBERG,D. and O' TOOLE,M.
+            |  TITLE     Human antibodies against human interleukin-22 (IL-22)
+            | """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   ASTURIAS ORTEGA,J., IBARROLA LOPEZ DE DAVALILLO,I., ARILLA
+            |            RODRIGUEZ,M. and MARTINEZ GARATE,A.
+            |  TITLE     Hypoallergenic hybrid proteins of major group 1 and 2 mite
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   KLINGUER-HAMOUR CHRISTINE,[.F.R.]. and JOUHANNEAUD
+            |            ALEXANDRA,[.F.R.].
+            |  TITLE     USE OF THE ANTIBODY I-3859 FOR THE DETECTION AND DIAGNOSIS OF
+            | """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   CARY STEPHEN P L,[.U.S.]., BOON ELIZABETH M,[.U.S.]., WEINERT
+            |            EMILY,[.U.S.]., WINGER JONATHAN A,[.U.S.]. and MARLETTA MICHAEL
+            |            A,[.U.S.].
+            |  TITLE     COMPOSITIONS AND METHODS FOR THE DELIVERY OF OXYGEN
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   BEREK,C. and VAN TRUNG CHU,(.V.N.).
+            |  TITLE     Eosinophils as a therapeutic target
+            | """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   BERRAONDO LOPEZ,P., FIORAVANTI,J., MEDINA ECHEVERZ,J., MELERO
+            |            BERMEJO,I., OCHOA NIETO,M., PALAZ0N GARCIA,F., BULFONE-PAUS,S. and
+            |            DUITMAN,E.H.
+            |  TITLE     NOVEL CONJUGATES AND COMPOSITIONS FOR IMMUNOTHERAPY AND
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   O'BRIEN,A., MELTON-CELSA,A., SMITH,M. and SINCLAIR,J.
+            |  TITLE     METHODS AND COMPOSITIONS BASED ON SHIGA TOXIN TYPE 2 PROTEIN
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   REYNOLDS,E., O'BRIEN SIMPSON,N., CROSS,K. and SLAKESKI,N.
+            |  TITLE     PREVENTION, TREATMENT AND DIAGNOSIS OF P.GINGIVALIS INFECTION
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   GLA?KLER,J. and MERTES,F.
+            |  TITLE     Low melting temperature primer
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
     }
-/*
+
     'referenceReference {
       * - {
         val ref = "REFERENCE   2  (bases 1 to 13033779)\n"
@@ -1092,7 +1309,7 @@ object GenbankParserTestSuite extends TestSuite {
         val r = parse(GenbankParser.Reference, ref)
       }
     }
-*/
+
   }
   def parse[T](p: Parser[T], txt: String): T = {
     p.parse(txt) match {
