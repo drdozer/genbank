@@ -918,7 +918,7 @@ object GenbankParserTestSuite extends TestSuite {
       * - {
         val txt = "VAN TRUNG CHU,(.V.N.).\n"
         val auths = parse(GenbankParser.Author, txt)
-        assert(auths == Author(Some("VAN TRUNG CHU"), Seq(), None, Some("VN")))
+        assert(auths == Author(Some("VAN TRUNG CHU"), Seq("(", "V", "N", ")"), None, None))
       }
 
       * - {
@@ -943,6 +943,381 @@ object GenbankParserTestSuite extends TestSuite {
         val txt = "GLA?KLER,J. and MERTES,F."
         val auths = parse(GenbankParser.Author, txt)
         assert(auths == Author(Some("GLA?KLER"), Seq("J"), None, None))
+      }
+
+      * - {
+        val txt = "Genoscope.\n"
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("Genoscope"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "Genoscope.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Genoscope"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "Genoscope.\n"
+        val auths = parse(GenbankParser.SingleAuthor, txt)
+        assert(auths == Author(Some("Genoscope"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "F.San.,"
+        val auths = parse(GenbankParser.InitialsWithNamesIn, txt)
+        assert(auths == Seq("F", "San"))
+      }
+
+      * - {
+        val txt = "Lucas,F.San.,"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("Lucas"), Seq("F", "San"), None, None))
+      }
+
+      * - {
+        val txt = "Lucas,F.San.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Lucas"), Seq("F", "San"), None, None))
+      }
+
+      * - {
+        val txt = "Genoscope -,C.E.A.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Genoscope -"), Seq("C", "E", "A"), None, None))
+      }
+
+      * - {
+        val txt = "Genoscope -,C.E.A.\n"
+        val auths = parse(GenbankParser.SingleAuthor, txt)
+        assert(auths == Author(Some("Genoscope -"), Seq("C", "E", "A"), None, None))
+      }
+
+      * - {
+        val txt = "F,G.Gao.,"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("F"), Seq("G", "Gao"), None, None))
+      }
+
+      * - {
+        val txt = "F,G.Gao.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("F"), Seq("G", "Gao"), None, None))
+      }
+
+      * - {
+        val txt = "McSpadden Gardener,B.B."
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "McSpadden Gardener")
+      }
+
+      * - {
+        val txt = "McSpadden Gardener,B.B."
+        val auths = parse(GenbankParser.FamilyName, txt)
+        assert(auths == "McSpadden Gardener")
+      }
+
+      * - {
+        val txt = "McSpadden Gardener,B.B.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("McSpadden Gardener"), Seq("B", "B"), None, None))
+      }
+
+      * - {
+        val txt = "Shen,C.-h.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Shen"), Seq("C", "-h"), None, None))
+      }
+
+      * - {
+        val txt = "Leverstein-van Hall,M.A.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Leverstein-van Hall"), Seq("M", "A"), None, None))
+      }
+
+      * - {
+        val txt = "Folly,Y.Minnie.Elodie.,"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("Folly"), Seq("Y", "Minnie", "Elodie"), None, None))
+      }
+
+      * - {
+        val txt = "Folly,Y.Minnie.Elodie.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Folly"), Seq("Y", "Minnie", "Elodie"), None, None))
+      }
+
+      * - {
+        val txt = "Andreichuk,Iu.V.,"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("Andreichuk"), Seq("Iu", "V"), None, None))
+      }
+
+      * - {
+        val txt = "Andreichuk,Iu.V.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Andreichuk"), Seq("Iu", "V"), None, None))
+      }
+
+      * - {
+        val txt = "Kharroub,k.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Kharroub"), Seq("k"), None, None))
+      }
+
+      * - {
+        val txt = "Z.(.\n"
+        val auths = parse(GenbankParser.Initials, txt)
+        assert(auths == Seq("Z", "("))
+      }
+
+      * - {
+        val txt = "Wang,Z.(.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Wang"), Seq("Z", "("), None, None))
+      }
+
+      * - {
+        val txt = "s Rensen,A.M.,"
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "s Rensen")
+      }
+
+      * - {
+        val txt = "s Rensen,A.M.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("s Rensen"), Seq("A", "M"), None, None))
+      }
+
+      * - {
+        val txt = "sim n Buela,L.,"
+        val auths = parse(GenbankParser.CompoundNamePrefix, txt)
+        assert(auths == "sim")
+      }
+
+      * - {
+        val txt = "sim n Buela,L.,"
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "sim n Buela")
+      }
+
+      * - {
+        val txt = "sim n Buela,L.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("sim n Buela"), Seq("L"), None, None))
+      }
+
+      * - {
+        val txt = "Egashira,K.1.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Egashira"), Seq("K", "1"), None, None))
+      }
+
+      * - {
+        val txt = "R,S.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("R"), Seq("S"), None, None))
+      }
+
+      * - {
+        val txt = "Espinsa -Ruiz,M.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Espinsa -Ruiz"), Seq("M"), None, None))
+      }
+
+      * - {
+        val txt = "[SI],"
+        val auths = parse(GenbankParser.CountryCode, txt)
+        assert(auths == "SI")
+      }
+
+      * - {
+        val txt = "Ea??[SI],"
+        val auths = parse(GenbankParser.FamilyName, txt)
+        assert(auths == "Ea??")
+      }
+
+      * - {
+        val txt = "Ea??[SI],"
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("Ea??"), Seq(), None, Some("SI")))
+      }
+
+      * - {
+        val txt = "Ea??[SI],"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Ea??"), Seq(), None, Some("SI")))
+      }
+
+      * - {
+        val txt = "STRA&ZCARON,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("STRA&ZCARON"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "Y.\n"
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("Y"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "Y.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Y"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "Hoosen A.A.,"
+        val auths = parse(GenbankParser.FamilyName, txt)
+        assert(auths == "Hoosen")
+      }
+
+      * - {
+        val txt = "Hoosen A.A.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Hoosen"), Seq("A", "A"), None, None))
+      }
+
+      * - {
+        val txt = "Reyes1,J.D.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Reyes1"), Seq("J", "D"), None, None))
+      }
+
+      * - {
+        val txt = "Lajudie,P. de,"
+        val auths = parse(GenbankParser.WellFormedAuthor, txt)
+        assert(auths == Author(Some("Lajudie"), Seq("P"), Some("de"), None))
+      }
+
+      * - {
+        val txt = "Lajudie,P. de,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Lajudie"), Seq("P"), Some("de"), None))
+      }
+
+      * - {
+        val txt = "Sena-D Anna,L.,"
+        val auths = parse(GenbankParser.CompoundNamePrefix, txt)
+        assert(auths == "Sena-D")
+      }
+
+      * - {
+        val txt = "Sena-D Anna,L.,"
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "Sena-D Anna")
+      }
+
+      * - {
+        val txt = "Sena-D Anna,L.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Sena-D Anna"), Seq("L"), None, None))
+      }
+
+      * - {
+        val txt = """Crop
+                    |            Plant Research (IPK).""".stripMargin
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "Crop Plant Research (IPK)")
+      }
+
+      * - {
+        val txt = """Crop
+                    |            Plant Research (IPK).
+                    |            """.stripMargin
+        val auths = parse(GenbankParser.FamilyNameOnly, txt)
+        assert(auths == Author(Some("Crop Plant Research (IPK)"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = """Crop
+                    |            Plant Research (IPK).
+                    |            """.stripMargin
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Crop Plant Research (IPK)"), Seq(), None, None))
+      }
+
+      * - {
+        val txt = "O`Reilly,L.D.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O`Reilly"), Seq("L", "D"), None, None))
+      }
+
+      * - {
+        val txt = """Vinals
+                    |            Y De Bassols,C.
+                    |""".stripMargin
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "Vinals Y De Bassols")
+      }
+
+      * - {
+        val txt = """Vinals
+                    |            Y De Bassols,C.
+                    |""".stripMargin
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Vinals Y De Bassols"), Seq("C"), None, None))
+      }
+
+      * - {
+        val txt = "Haedrich,(b.Moeckel.).B.,"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("Haedrich"), Seq("(b", "Moeckel", ")", "B"), None, None))
+      }
+
+      * - {
+        val txt = "Haedrich,(b.Moeckel.).B.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Haedrich"), Seq("(b", "Moeckel", ")", "B"), None, None))
+      }
+
+      * - {
+        val txt = "M.o slashed.ller,Sslashedren.,\n"
+        val auths = parse(GenbankParser.InitialsWithNamesIn, txt, Some("M.o slashed.ller,"))
+        assert(auths == Seq("M", "o slashed", "ller"))
+      }
+
+      * - {
+        val txt = "M.o slashed.ller,Sslashedren.,\n"
+        val auths = parse(GenbankParser.InitialsWithNamesInThenName, txt, Some("M.o slashed.ller,Sslashedren."))
+        assert(auths == Author(Some("Sslashedren"), Seq("M", "o slashed", "ller"), None, None))
+      }
+
+      * - {
+        val txt = "M.o slashed.ller,Sslashedren.,\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Sslashedren"), Seq("M", "o slashed", "ller"), None, None))
+      }
+
+      * - {
+        val txt = "M.Eskelund., "
+        val auths = parse(GenbankParser.CompoundNamePrefix, txt)
+        assert(auths == "M.")
+      }
+
+      * - {
+        val txt = "M.Eskelund., "
+        val auths = parse(GenbankParser.BrokenName, txt)
+        assert(auths == "M.Eskelund.")
+      }
+
+      * - {
+        val txt = "Bj.o\n            slashed.rnvad,M.Eskelund., "
+        val auths = parse(GenbankParser.InitialsWithNamesIn, txt, Some("Bj.o\n            slashed.rnvad,"))
+        assert(auths == Seq("Bj", "o slashed", "rnvad"))
+      }
+
+      * - {
+        val txt = "Bj.o\n            slashed.rnvad,M.Eskelund., "
+        val auths = parse(GenbankParser.InitialsWithNamesInThenName, txt)
+        assert(auths == Author(Some("M.Eskelund."), Seq("Bj", "o slashed", "rnvad"), None, None))
+      }
+
+      * - {
+        val txt = "Bj.o\n            slashed.rnvad,M.Eskelund., "
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("M.Eskelund."), Seq("Bj", "o slashed", "rnvad"), None, None))
       }
 
     }
@@ -1201,6 +1576,309 @@ object GenbankParserTestSuite extends TestSuite {
         parse(GenbankParser.ReferenceAuthors, txt)
       }
 
+      * - {
+        val txt =
+          """  AUTHORS   Genoscope.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Muzny,D.M., Qin,X., Buhay,C.J., Dugan-Rocha,S., Ding,Y., Chen,G.,
+            |            Hawes,A.C., Holder,M., Jhangiani,S.N., Johnson,A.J., Khan,Z.M.,
+            |            Li,Z., Liu,W., Liu,X., Perez,L.M., Shen,H., Wang,Q., Watt,J.E.,
+            |            Xi,L., Xin,Y., Zhou,J., Deng,J., Jiang,H., Liu,Y., Qu,J.,
+            |            Song,X.-Z., Zhang,L., Villasana,D., Liu,J., Liyanage,D.,
+            |            Lorensuhewa,L.M., Robinson,T., Song,A., Song,B.-B., Dinh,H.H.,
+            |            Thornton,R., Coyle,M.D., Francisco,L., Jackson,L., Javaid,M.,
+            |            Korchina,V., Kovar,C.L., Mata,R., Mathew,T., Ngo,R., Nguyen,L.,
+            |            Nguyen,N., Okwuonu,G., Ongeri,F., Pham,C., Simmons,D.,
+            |            Wilczek-Boney,K.B., Hale,W., Jakkamsetti,A., Opheim,D., Pham,P.,
+            |            Lucas,F.San., Warren,J., Zhang,J., Zhao,Z., Zhou,C., Zhu,D.,
+            |            Lee,S.L., Bess,C.M., Blankenburg,K.P., Forbes,L., Fu,Q.,
+            |            Gubbala,S., Hirani,K., Jayaseelan,J.C., Lara,F., Munidasa,M.,
+            |            Palculict,T., Patil,S.S., Pu,L.-L., Saada,N., Tang,L.-Y.,
+            |            Weissenberger,G.M., Zhu,Y., Hemphill,L., Shang,Y., Youmans,B.,
+            |            Ayvaz,T., Ross,M., Santibanez,J., Aqrawi,P., Gross,S., Joshi,V.,
+            |            Fowler,G., Nazareth,L., Reid,J., Worley,K.C., Petrosino,J.,
+            |            Highlander,S. and Gibbs,R.A.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Genoscope -,C.E.A.
+            |  CONSRTM   1:UMR Genomique Developpement Pouvoir Pathogene INRA, 33883
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Aram,M.A., Markande,A.R., Ketan,P.D., Niyati,V.B., Vennila,A.,
+            |            Bhushan,N.Binay., Nerurkar,A.S. and Purushothaman,C.S.
+            |  TITLE     Molecular and Cultural Analysis of Nereis chilkaensis (Southern)
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Chen,C., Tang,J., Dong,W., Wang,J., Wang,C., Pan,X., Zheng,F.,
+            |            Song,Y., Dong,Y., Zhu,X., Sun,H., Feng,T., Guo,Z., Ju,A., Ge,J.,
+            |            Wang,J., Wang,X., F,G.Gao., Yang,H., Yang,R., Wang,J. and Yu,J.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Joshi,R. and McSpadden Gardener,B.B.
+            |  TITLE     Identification and Characterization of Novel Genetic Markers
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Yang,M.-K., Lin,Y.-C. and Shen,C.-h.
+            |  TITLE     Identification of two gene loci involved in
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Paauw,A., Fluit,A.C., Verhoef,J. and Leverstein-van Hall,M.A.
+            |  TITLE     Enterobacter cloacae outbreak and emergence of quinolone resistance
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Zhao,Y., Sangare,L., Wang,Y., Folly,Y.Minnie.Elodie.,
+            |            Selvaraj,J.Nimal. and Liu,Y.
+            |  TITLE     Complete genome sequence of Bacillus subtilis SG6 antagonistic
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Fadeeva,I.A., Korenberg,E.I., Nefedova,V.V., Andreichuk,Iu.V.,
+            |            Markov,A.V. and Shaginian,I.A.
+            |  TITLE     [Genetic heterogeneity of Borrelia afzelii in the natural focus of
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kharroub,K., Quesada,T., Ferrer,R., Fuentes,S., Aguilera,M.,
+            |            Boulahrouf,A., Ramos-Cormenzana,A. and Monteoliva-Sanchez,M.
+            |  TITLE     Halorubrum ezzemoulense sp. nov., a halophilic archaeon isolated
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kharroub,K., Monteoliva-Sanchez,M., Ramos-Cormenzana,A. and
+            |            Boulahrouf,A.
+            |  TITLE     Halorubrum ezzemoulense sp. nov., an novel halophilic archaeon
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kharroub,k., Monteoliva-Sanchez,M., Ramos-Cormenzana,A. and
+            |            Boulahrouf,A.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Jia,K. V and Li,S. Sr.
+            |  TITLE     Isolation and characterization of nitrogen fixating and
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   .
+            |  TITLE     Enhanced expression of fusion polypeptides with a biotinylation tag
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Wang,Z.(.
+            |  TITLE     Mthp promoter element
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   elm N,J., Wahlestedt,C., Liang,Z., s Rensen,A.M., Rum,H. and
+            |            Koch,T.
+            |  TITLE     SHORT INTERFERING RNA (siRNA) ANALOGUES
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   martinez Martinez,A., sim n Buela,L., santa Cruz,S., s enz jim
+            |            Nez,M.P., molina Vila,M., Junquera,S.N., g mez rom N,J.J. and
+            |            cuevas gonz Lez,J.
+            |  TITLE     In vitro method to detect bladder transitional cell carcinoma
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Raut,A., R,S., Vaishampain,P., Souchey,Y., Bandekar,J. and
+            |            Kapadnis,B.
+            |  TITLE     Partial 16S rRNA sequence of a gram negative poultry isolate from
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Revol,A., Espinsa -Ruiz,M., Medina-Villanueva,I. and
+            |            Salinas-Carmona,M.C.
+            |  TITLE     Expression of Nocardia brasiliensis superoxide dismutase during the
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   JERALA,R., BENCINA,M., MAJERLE,A., OBLAK,A., LEBAR,T.,
+            |            FORSTNERIC,V., LONZARIC,J., SMOLE,A., Ea??[SI], GABER,R.,
+            |            BEZELJAK,U., GOLOB,A., KADUNC,L., VUCKO,D., STRA&ZCARON, AR,M.,
+            |            PIRS,B., JERALA,M., ZUPANCIC,U., SOMRAK,M., LU&ZCARON and NIK,Z.
+            |  TITLE     BISTABLE GENETIC TOGGLE SWITCH COMPRISING A PAIR OF RECIPROCAL
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Liu,X.D., Xu,Y. and Y.
+            |  TITLE     Molecular cloning and characterization of an alpha-amylase with raw
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kharsany,A.B.M., Hoosen A.A., Kiepiela P. and Sturm A.W.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Reyes1,J.D., Tabche1,M., Morera,C., Girard,M.L., Romero,D.,
+            |            Krol,E., Miranda,J. and Soberon,M.
+            |  TITLE     Expression pattern of Rhizobium etli ccmIEFH genes involved in
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Sy,A., Giraud,E., Jourand,P., Willems,A., Lajudie,P. de, Samba,R.,
+            |            Prin,Y., Neyra,M., Gillis,M., Masson-Boivin,C. and Dreyfus,B.
+            |  TITLE     Direct Submission
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Pannekoek,Y., Huis In 't Veld,R., Hopman,C.T., Langerak,A.A.,
+            |            Speijer,D. and van der Ende,A.
+            |  TITLE     Molecular characterization and identification of proteins regulated
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Sena-D Anna,L., Moret,J., Gonzalez,H., Rojas-Tortolero,D.,
+            |            Montiel,E. and Naranjo-Briceno,L.
+            |  TITLE     A strategy to obtain axenic cultures of the cyanobacterium
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   European Union Chromosome 3 Arabidopsis Genome Sequencing
+            |            Consortium, The Institute for Genomic Research and Kazusa DNA
+            |            Research Institute.
+            |  TITLE     Sequence and analysis of chromosome 3 of the plant Arabidopsis
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kazusa DNA Research Institute, The Cold Spring Harbor, Washington
+            |            University Sequencing Consortium, The European Union Arabidopsis
+            |            Genome Sequencing Consortium, Institute of Plant Genetics and Crop
+            |            Plant Research (IPK).
+            |  TITLE     Sequence and analysis of chromosome 5 of the plant Arabidopsis
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Cabezon Silva,T.E., Cassart,J.P., Coche,T., Gaulis,S.R. and Vinals
+            |            Y De Bassols,C.
+            |  TITLE     Novel compounds
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   The FANTOM Consortium and RIKEN Genome Exploration Research Group
+            |            and Genome Science Group (Genome Network Project Core Group).
+            |  TITLE     The transcriptional landscape of the mammalian genome
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Andersen,L.Nonboe., Schulein,M., Lange,N.Erik.Krebs., Bj.o
+            |            slashed.rnvad,M.Eskelund., M.o slashed.ller,Sslashedren.,
+            |            Glad,S.O.Schroslashedder., Kauppinen,M.Sakari., Schnorr,K. and
+            |            Kongsbak,L.
+            |  TITLE     Pectate lyases
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
     }
 
     'referenceReference {
@@ -1231,6 +1909,25 @@ object GenbankParserTestSuite extends TestSuite {
         val ref = "REFERENCE   1\n"
         parse(GenbankParser.ReferenceReference, ref)
       }
+    }
+
+    'referenceTitle {
+
+      * - {
+        val title = "  TITLE     Novel compounds\n"
+        parse(GenbankParser.ReferenceTitle, title)
+      }
+    }
+
+    'referenceJournal {
+
+      * - {
+        val journal = """  JOURNAL   Patent: EP 1650221-A2 1 26-APR-2006;
+                        |            GlaxoSmithKline Biologicals SA (BE)
+                        |FEATURES             Location/Qualifiers""".stripMargin
+        parse(GenbankParser.ReferenceJournal, journal)
+      }
+
     }
 
     'reference {
@@ -1308,13 +2005,31 @@ object GenbankParserTestSuite extends TestSuite {
                     |""".stripMargin
         val r = parse(GenbankParser.Reference, ref)
       }
+
+      * - {
+        val ref = """REFERENCE   1
+                    |  AUTHORS   Cabezon Silva,T.E., Cassart,J.P., Coche,T., Gaulis,S.R. and Vinals
+                    |            Y De Bassols,C.
+                    |  TITLE     Novel compounds
+                    |  JOURNAL   Patent: EP 1650221-A2 1 26-APR-2006;
+                    |            GlaxoSmithKline Biologicals SA (BE)
+                    |FEATURES             Location/Qualifiers
+                    |""".stripMargin
+        val r = parse(GenbankParser.Reference, ref)
+      }
     }
 
   }
-  def parse[T](p: Parser[T], txt: String): T = {
+  def parse[T](p: Parser[T], txt: String, consumed: Option[String] = None): T = {
     p.parse(txt) match {
-      case Success(t, _) =>
-        t
+      case Success(t, i) =>
+        consumed match {
+          case None => t
+          case Some(str) =>
+            val matchStr = txt.substring(0, i)
+            if(str == matchStr) t
+            else throw new Exception(s"Expected match to `$str` but actually matched `$matchStr`")
+        }
       case f : Failure =>
         throw new Exception(f.extra.traced.trace)
     }

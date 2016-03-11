@@ -37,6 +37,9 @@ object GenbankParser {
   val letters = letter.rep(1)
   val dblQuot = "\""
   val sglQuot = "'"
+  val backtick = "`"
+  val leftElipse = "("
+  val rightElipse = ")"
 
   val blankLine = spaces_? ~ newline
   val DMY = P(DD ~ "-" ~ MMM ~ "-" ~ YYYY)
@@ -194,11 +197,11 @@ object GenbankParser {
   ) map genbank.BaseRange.tupled
 
   lazy  val ReferenceAuthors = P(
-    subkeyword("AUTHORS") ~ AuthorList ~ period.? ~ newline
+    subkeyword("AUTHORS") ~ AuthorList.?.map(_ getOrElse genbank.AuthorList(Seq(), false)) ~ period.? ~ newline
   )
 
   lazy val AuthorList = P(
-    FinalAuthor.map(a => genbank.AuthorList(Seq(a), false)) |
+    SingleAuthor.map(a => genbank.AuthorList(Seq(a), false)) |
       (AuthorListL ~ (AndAuthor | EtAl)).map { case (al, f) => f(al) }
   )
 
@@ -206,13 +209,14 @@ object GenbankParser {
     Author.rep(min = 1, sep = ("," ~ ",".? ~ lsep).~/)
   ) map (genbank.AuthorList(_, false))
 
-  lazy val FinalAuthor = P(Author ~ &(newline) ~ !stansaIndent)
+  lazy val SingleAuthor = P(Author ~ &(newline) ~ !stansaIndent)
 
   lazy val Author: P[genbank.Author] = P(
     WellFormedAuthor |
       NameWithTrailingSpace |
       NameWithNamesInInitials |
       InitialsThenName |
+      InitialsWithNamesInThenName |
       FamilyNameOnly
   )
 
@@ -221,61 +225,83 @@ object GenbankParser {
   ) map { case (fn, is, nn, cc) => genbank.Author(Some(fn), is, nn, cc) }
 
   lazy val NameWithTrailingSpace = P(
-    FamilyName ~ (comma | period) ~ space ~ Initials ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
+    FamilyName ~ (comma | period).? ~ space ~ Initials ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
   ) map { case (fn, is, nn) => genbank.Author(Some(fn), is, nn, None) }
 
   lazy val NameWithNamesInInitials = P(
-    FamilyName ~ comma ~ InitialsWithNamesIn ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
+    (FamilyName | upperCase.!) ~ comma ~ InitialsWithNamesIn ~ (lsep ~ NameNumber).? ~ &(thenNameEnding)
   ) map { case (fn, is, nn) => genbank.Author(Some(fn), is, nn, None) }
 
   lazy val FamilyNameOnly = P(
-    FamilyName ~ (comma.? ~ CountryCode).? ~ (&(thenNameEnding) | &(lineWrap))
+    FamilyName ~ (comma.? ~ CountryCode).? ~ period.? ~ (&(thenNameEnding) | &(lineWrap))
   ) map { case(fn, cc) => genbank.Author(Some(fn), Seq(), None, cc)  }
 
   lazy val InitialsThenName = P(
     Initials ~ lsep.? ~ FamilyName ~ &(thenNameEnding)
   ) map { case (is, fn) => genbank.Author(Some(fn), is, None, None) }
 
+  lazy val InitialsWithNamesInThenName = P(
+    InitialsWithNamesIn ~ lsep.? ~ ((FamilyName ~ period) | BrokenName)  ~ &(thenNameEnding)
+      ) map { case (is, fn) => genbank.Author(Some(fn), is, None, None) }
+
   lazy val FamilyName = P(
     CompoundName |
-    SimpleName
+    SimpleName |
+    SingleInitialName
   )
 
-  lazy val SimpleName = P( (letter ~ (letter | hyphen | sglQuot | "?").rep(1)).! )
+//  lazy val FamilyName = P(
+//    (lineWrap | ". " | (!(period | comma | listAnd | listEt) ~ AnyChar)).rep(1).!
+//  )
+
+  lazy val SingleInitialName = P(
+    letter.! ~ &(comma | thenNameEnding)
+  )
+
+  lazy val SimpleName = P( ((letter | hyphen | sglQuot | leftElipse) ~ (letter | hyphen | sglQuot | backtick | "?" | "&" | digit | rightElipse).rep(1)).! )
 
   lazy val CompoundName = P(
-    CompoundNamePrefix ~ ((lsep ~ SimpleName) | (spaces ~ upperCase.! ~ !period)).rep(min = 1, sep = !(thenNameEnding))
+    CompoundNamePrefix ~ CompoundNameSuffix
   ) map { case (pfx, sfx) => s"$pfx ${sfx.mkString(" ")}" }
 
   lazy val CompoundNamePrefix = P(
-    ((upperCase ~ lowerCase.rep(1) ~ period).! | (letter ~ lowerCase.rep(1)).! | (upperCase | hyphen | sglQuot | "0").rep(1).!) ~ !thenNameEnding
+    ((upperCase ~ lowerCase.rep ~ period).! |
+      (letter | hyphen | sglQuot | "0").rep(1).!) ~ !thenNameEnding
+  )
+
+  lazy val CompoundNameSuffix = P(
+    ((lsep ~ SimpleName) | (lsep ~ (letter | hyphen | digit | leftElipse | rightElipse).! ~ !period)).rep(min = 1, sep = !thenNameEnding)
+  )
+
+  lazy val BrokenName = P(
+    (upperCase ~ lowerCase.rep ~ period).rep(1).!
   )
 
   lazy val Initials = P( (Initial ~ (&(thenEndingComma) | (period.? ~ comma ~ &(upperCase)) | period)).rep(1) )
 
-  lazy val Initial = P((hyphen.? ~ upperCase).!)
+  lazy val Initial = P((upperCase | (hyphen ~ letter) | lowerCase | leftElipse | rightElipse | digit).!)
 
   lazy val InitialsWithNamesIn = P(
-    Initials ~ FamilyName ~ period ~ Initials
-  ) map { case (i1, fn, i2) => (i1 :+ fn) ++ i2 }
+    Initials.? ~ (FamilyName ~ period).rep(1) ~ (Initials | (FamilyName.map(Seq(_)) ~ comma)).?
+  ) map { case (i1, fn, i2) => i1.getOrElse(Seq()) ++ fn ++ i2.getOrElse(Seq()) }
 
-  lazy val NameNumber = P( (upperCase ~ letter.rep(1) ~ period.?).! ~ &(thenNameEnding))
+  lazy val NameNumber = P( (letter.rep(1) ~ period.?).! ~ &(thenNameEnding))
 
   lazy val CountryCode = P(
     ("[." ~ upperCase.! ~ "." ~ upperCase.! ~ ".].") |
-      ("(." ~ upperCase.! ~ "." ~ upperCase.! ~ ".).")
+      ("[" ~ upperCase.! ~ upperCase.! ~ "]")
   ) map { case (c1, c2) => s"$c1$c2" }
 
   lazy val listAnd = P( lsep ~ "and")
 
   lazy val listEt = P( lsep ~ "et")
 
-  lazy val AndAuthor = P( lsep ~ "and" ~/ lsep ~ Author) map (postpendAuthor _)
+  lazy val AndAuthor = P( lsep ~ "and" ~/ lsep ~ Author).rep(1) map (postpendAuthors _)
 
   lazy val EtAl = P( lsep ~ "et" ~ lsep ~ "al." ) map (_ => withEtAl _)
 
   private def prependAuthor(au: genbank.Author) = (al: genbank.AuthorList) => al.copy(authors = au +: al.authors)
-  private def postpendAuthor(au: genbank.Author) = (al: genbank.AuthorList) => al.copy(authors = al.authors :+ au)
+  private def postpendAuthors(aus: Seq[genbank.Author]) = (al: genbank.AuthorList) => al.copy(authors = al.authors ++ aus)
   private def withEtAl(al: genbank.AuthorList) = al.copy(etAl = true)
 
   lazy val thenEndingComma = P(comma ~ !letter)
@@ -291,7 +317,7 @@ object GenbankParser {
   ) map (_.mkString("\n"))
 
   lazy  val ReferenceJournal = P(
-    subkeyword("JOURNAL") ~ multiline(notNewlines.!) ~ newline
+    subkeyword("JOURNAL") ~ multilineC(notNewlines.!) ~ newline
   ) map (_.mkString("\n"))
 
   lazy  val ReferenceMedline = P(
