@@ -1320,6 +1320,90 @@ object GenbankParserTestSuite extends TestSuite {
         assert(auths == Author(Some("M.Eskelund."), Seq("Bj", "o slashed", "rnvad"), None, None))
       }
 
+      * - {
+        val txt = "3rd, "
+        val auths = parse(GenbankParser.NameNumber, txt)
+        assert(auths == "3rd")
+      }
+
+      * - {
+        val txt = "Plunkett,G. 3rd, "
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Plunkett"), Seq("G"), Some("3rd"), None))
+      }
+
+      * - {
+        val txt = "M.>.\n"
+        val auths = parse(GenbankParser.Initials, txt)
+        assert(auths == Seq("M", ">"))
+      }
+
+      * - {
+        val txt = "VVyssotski,M.>.\n"
+        val auths = parse(GenbankParser.WellFormedAuthor, txt)
+        assert(auths == Author(Some("VVyssotski"), Seq("M", ">"), None, None))
+      }
+
+      * - {
+        val txt = "VVyssotski,M.>.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("VVyssotski"), Seq("M", ">"), None, None))
+      }
+
+      * - {
+        val txt = "R.B.Gennis.\n"
+        val auths = parse(GenbankParser.InitialsThenName, txt)
+        assert(auths == Author(Some("Gennis"), Seq("R", "B"), None, None))
+      }
+
+      * - {
+        val txt = "R.B.Gennis.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Gennis"), Seq("R", "B"), None, None))
+      }
+
+      * - {
+        val txt = "3rd,R.C. and"
+        val auths = parse(GenbankParser.NameNumberThenInitials, txt)
+        assert(auths == Author(None, Seq("R", "C"), Some("3rd"), None))
+      }
+
+      * - {
+        val txt = "3rd,R.C. and"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(None, Seq("R", "C"), Some("3rd"), None))
+      }
+
+      * - {
+        val txt = "Y.Mori.K.Hatada.Y.\n"
+        val auths = parse(GenbankParser.InitialsWithNamesIn, txt)
+        assert(auths == Seq("Y", "Mori", "K", "Hatada", "Y"))
+      }
+
+      * - {
+        val txt = "Nogi,Y.Mori.K.Hatada.Y.\n"
+        val auths = parse(GenbankParser.NameWithNamesInInitials, txt)
+        assert(auths == Author(Some("Nogi"), Seq("Y", "Mori", "K", "Hatada", "Y"), None, None))
+      }
+
+      * - {
+        val txt = "Nogi,Y.Mori.K.Hatada.Y.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Nogi"), Seq("Y", "Mori", "K", "Hatada", "Y"), None, None))
+      }
+
+      * - {
+        val txt = "Haq,I.-U.-. and"
+        val auths = parse(GenbankParser.WellFormedAuthor, txt)
+        assert(auths == Author(Some("Haq"), Seq("I", "-U", "-"), None, None))
+      }
+
+      * - {
+        val txt = "Haq,I.-U.-. and"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Haq"), Seq("I", "-U", "-"), None, None))
+      }
+
     }
 
     'authors {
@@ -1879,6 +1963,58 @@ object GenbankParserTestSuite extends TestSuite {
         parse(GenbankParser.ReferenceAuthors, txt)
       }
 
+      * - {
+        val txt =
+          """  AUTHORS   Riley,M., Abe,T., Arnaud,M.B., Berlyn,M.K., Blattner,F.R.,
+            |            Chaudhuri,R.R., Glasner,J.D., Horiuchi,T., Keseler,I.M., Kosuge,T.,
+            |            Mori,H., Perna,N.T., Plunkett,G. 3rd, Rudd,K.E., Serres,M.H.,
+            |            Thomas,G.H., Thomson,N.R., Wishart,D. and Wanner,B.L.
+            |  TITLE     Escherichia coli K-12: a cooperatively developed annotation
+          """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Lagutin,K., MacKenzie,A., Houghton,K.M., Stott,M.B. and
+            |            VVyssotski,M.>.
+            |  TITLE     Phospholipids of Thermus and Meiothermus bacteria and its
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   R.B.Gennis.
+            |  TITLE     Direct Submission
+          """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Stacy,A.K., Mitchell,N.M., Maddux,J.T., De la Cruz,M.A., Duran,L.,
+            |            Giron,J.A., 3rd,R.C. and Mellata,M.
+            |  TITLE     Evaluation of the Prevalence and Production of Escherichia coli
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Nogi,Y.Mori.K.Hatada.Y.
+            |  TITLE     Thalassobius abyssi sp. nov., a marine bacterium isolated from the
+            | """.stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Hameed,U., Haq,I.-U.-. and Wilson,D.B.
+            |  TITLE     Cloning and expression of alpha amylase catalytic domain from
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
     }
 
     'referenceReference {

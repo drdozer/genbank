@@ -40,6 +40,7 @@ object GenbankParser {
   val backtick = "`"
   val leftElipse = "("
   val rightElipse = ")"
+  val gt = ">"
 
   val blankLine = spaces_? ~ newline
   val DMY = P(DD ~ "-" ~ MMM ~ "-" ~ YYYY)
@@ -209,7 +210,7 @@ object GenbankParser {
     Author.rep(min = 1, sep = ("," ~ ",".? ~ lsep).~/)
   ) map (genbank.AuthorList(_, false))
 
-  lazy val SingleAuthor = P(Author ~ &(newline) ~ !stansaIndent)
+  lazy val SingleAuthor = P(Author ~ period.? ~ &(newline) ~ !stansaIndent)
 
   lazy val Author: P[genbank.Author] = P(
     WellFormedAuthor |
@@ -217,6 +218,7 @@ object GenbankParser {
       NameWithNamesInInitials |
       InitialsThenName |
       InitialsWithNamesInThenName |
+      NameNumberThenInitials |
       FamilyNameOnly
   )
 
@@ -243,6 +245,10 @@ object GenbankParser {
   lazy val InitialsWithNamesInThenName = P(
     InitialsWithNamesIn ~ lsep.? ~ ((FamilyName ~ period) | BrokenName)  ~ &(thenNameEnding)
       ) map { case (is, fn) => genbank.Author(Some(fn), is, None, None) }
+
+  lazy val NameNumberThenInitials = P(
+    NameNumberBody ~ comma ~ Initials ~ &(thenNameEnding)
+  ) map { case (nn, is) => genbank.Author(None, is, Some(nn), None) }
 
   lazy val FamilyName = P(
     CompoundName |
@@ -279,13 +285,17 @@ object GenbankParser {
 
   lazy val Initials = P( (Initial ~ (&(thenEndingComma) | (period.? ~ comma ~ &(upperCase)) | period)).rep(1) )
 
-  lazy val Initial = P((upperCase | (hyphen ~ letter) | lowerCase | leftElipse | rightElipse | digit).!)
+  lazy val Initial = P((upperCase | (hyphen ~ letter) | hyphen | lowerCase | leftElipse | rightElipse | digit | gt).!)
 
   lazy val InitialsWithNamesIn = P(
-    Initials.? ~ (FamilyName ~ period).rep(1) ~ (Initials | (FamilyName.map(Seq(_)) ~ comma)).?
-  ) map { case (i1, fn, i2) => i1.getOrElse(Seq()) ++ fn ++ i2.getOrElse(Seq()) }
+    ((FamilyName.map(Seq(_)) ~ period) | Initials).rep(1) ~ (Initials | (FamilyName.map(Seq(_)) ~ comma)).?
+  ) map { case (iss, i2) => iss.flatten ++ i2.getOrElse(Seq()) }
 
-  lazy val NameNumber = P( (letter.rep(1) ~ period.?).! ~ &(thenNameEnding))
+  lazy val NameNumber = P( NameNumberBody ~ &(thenNameEnding))
+
+  lazy val NameNumberBody = P(
+    (digit.? ~ letter.rep(1) ~ period.?).!
+  )
 
   lazy val CountryCode = P(
     ("[." ~ upperCase.! ~ "." ~ upperCase.! ~ ".].") |
