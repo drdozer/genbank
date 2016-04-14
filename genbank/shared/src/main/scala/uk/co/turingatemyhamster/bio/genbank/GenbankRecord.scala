@@ -62,7 +62,7 @@ case class Reference(number: Int,
 
 case class AuthorList(authors: Seq[Author], etAl: Boolean)
 
-case class Author(name: Option[String], initials: Seq[String], numeral: Option[String], country: Option[String])
+case class Author(name: Option[String], initials: Seq[String], numeral: Option[String], country: Option[String], correctedFrom: Option[String] = None)
 
 case class BaseRange(from: Int, to: Int)
 

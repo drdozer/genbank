@@ -1404,6 +1404,138 @@ object GenbankParserTestSuite extends TestSuite {
         assert(auths == Author(Some("Haq"), Seq("I", "-U", "-"), None, None))
       }
 
+      * - {
+        val txt = "v.d. Schors,R.,"
+        val auths = parse(GenbankParser.MessedUpName, txt)
+        assert(auths == Author(Some("v.d. Schors"), Seq("R"), None, None))
+      }
+
+      * - {
+        val txt = "v.d. Schors,R.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("v.d. Schors"), Seq("R"), None, None))
+      }
+
+      * - {
+        val txt = "O'3 Callaghan,D.J."
+        val auths = parse(GenbankParser.CompoundNamePrefix, txt)
+        assert(auths == "O'3")
+      }
+
+      * - {
+        val txt = "O'3 Callaghan,D.J."
+        val auths = parse(GenbankParser.CompoundName, txt)
+        assert(auths == "O'3 Callaghan")
+      }
+
+      * - {
+        val txt = "O'3 Callaghan,D.J.,"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("O'3 Callaghan"), Seq("D", "J"), None, None))
+      }
+
+      * - {
+        val txt = "Kanniah(nmi),R., "
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Kanniah(nmi)"), Seq("R"), None, None))
+      }
+
+      * - {
+        val txt = "T.p,R.\n"
+        val auths = parse(GenbankParser.Initials, txt)
+        assert(auths == Seq("T", "p", "R"))
+      }
+
+      * - {
+        val txt = "T.p,R.\n"
+        val auths = parse(GenbankParser.InitialsOnly, txt)
+        assert(auths == Author(None, Seq("T", "p", "R"), None, None))
+      }
+
+      * - {
+        val txt = "T.p,R.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(None, Seq("T", "p", "R"), None, None))
+      }
+
+      * - {
+        val txt = "St Geme,J.W. III.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("St Geme"), Seq("J", "W"), Some("III."), None))
+      }
+
+      * - {
+        val txt = "St.Geme,J.W. III.\n"
+        val auths = parse(GenbankParser.SimpleName, txt)
+        assert(auths == "St.Geme")
+      }
+
+      * - {
+        val txt = "St.Geme,J.W. III.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("St.Geme"), Seq("J", "W"), Some("III."), None))
+      }
+
+      * - {
+        val txt = "Hardy,G.E.St.J. and"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Hardy"), Seq("G", "E", "St", "J"), None, None))
+      }
+
+      * - {
+        val txt = "Jouanneau,Y.:.\n"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Jouanneau"), Seq("Y", ":"), None, None))
+      }
+
+      * - {
+        val txt = "Wolf, R.E.Jr.\n"
+        val auths = parse(GenbankParser.SpacedAuthor, txt)
+        assert(auths == Author(Some("Wolf"), Seq("R", "E", "Jr"), None, None))
+      }
+
+      * - {
+        val txt = " and Wolf, R.E.Jr.\n"
+        val auths = parse(GenbankParser.AndAuthor, txt)(AuthorList(Seq(), false)).authors.head
+        assert(auths == Author(Some("Wolf"), Seq("R", "E", "Jr"), None, None))
+      }
+
+      * - {
+        val txt = "Smith J [corrected to Smit,J.\n"
+        val auths = parse(GenbankParser.CorrectedAuthor, txt)
+        assert(auths == Author(Some("Smit"), Seq("J"), None, None, Some("Smith J")))
+      }
+
+      * - {
+        val txt = " and Smith J [corrected to Smit,J.\n"
+        val auths = parse(GenbankParser.AndAuthor, txt)(AuthorList(Seq(), false)).authors.head
+        assert(auths == Author(Some("Smit"), Seq("J"), None, None, Some("Smith J")))
+      }
+
+      * - {
+        val txt =
+          """ and Brion C
+            |            [corrected to Briand,C.
+            |  TITLE     Sequence of tRNA(Asp) from Thermus thermophilus HB8
+            |"""
+            .stripMargin
+
+        val auths = parse(GenbankParser.AndAuthor, txt)(AuthorList(Seq(), false)).authors.head
+        assert(auths == Author(Some("Briand"), Seq("C"), None, None, Some("Brion C")))
+      }
+
+      * - {
+        val txt = "Thangapandian.v and"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Thangapandian"), Seq("v"), None, None))
+      }
+
+      * - {
+        val txt = "Wongsiri,S and"
+        val auths = parse(GenbankParser.Author, txt)
+        assert(auths == Author(Some("Wongsiri"), Seq("S"), None, None))
+      }
+
     }
 
     'authors {
@@ -2015,6 +2147,98 @@ object GenbankParserTestSuite extends TestSuite {
             |""".stripMargin
         parse(GenbankParser.ReferenceAuthors, txt)
       }
+
+      * - {
+        val txt =
+          """  AUTHORS   Reijnders,W.N.M., Brady,N.R., Hamacher,A., v.d. Schors,R.,
+            |            Westerhoff,H.V. and van Spanning,R.J.M.
+            |  TITLE     Dihydrolipoamide dehydrogenase (E3) of Paracoccus denitrificans
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   O'3 Callaghan,D.J.
+            |  TITLE     Equine herpesvirus type 1 glycoprotein D nucleic acids
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Buscher,A.Z., Burmeister,K., Barenkamp,S.J. and St Geme,J.W. III.
+            |  TITLE     Evolutionary and functional relationships among the nontypeable
+            |""".stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Buscher,A.Z., Burmeister,K., Barenkamp,S.J. and St.Geme,J.W. III.
+            |  TITLE     Direct Submission
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Perler,F.B., Comb,D.G., Jack,W.E., Moran,L.S., Qiang,B.,
+            |            Kucera,R.B., Benner,J., Slatko,B.E., Nwankwo,D.O., Hempstead,S.K.
+            |            et,al.
+            |  TITLE     Intervening sequences in an Archaea DNA polymerase gene
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Fawcett,W.P. and Wolf, R.E.Jr.
+            |  TITLE     Purification of a MalE-SoxS fusion protein and identification of
+            | """
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Kurtz,H.D. Jr., Smit,J. and Smith J [corrected to Smit,J.
+            |  TITLE     The Caulobacter crescentus holdfast: identification of holdfast
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Keith,G., Yusupov,M., Briand,C., Moras,D., Kern,D. and Brion C
+            |            [corrected to Briand,C.
+            |  TITLE     Sequence of tRNA(Asp) from Thermus thermophilus HB8
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Anithajothi.R, Umagowsaly.G, Duraikannu.K, Thangapandian.v and
+            |            Ramakritinan.C.M.
+            |  TITLE     Microbes associated with coral
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
+
+      * - {
+        val txt =
+          """  AUTHORS   Srisuparbh,D., Klinbunga,S., Wongsiri,S and Sittipraneed,S.
+            |  TITLE     Isolation and characterization of major royal jelly cDNA and
+            |"""
+            .stripMargin
+        parse(GenbankParser.ReferenceAuthors, txt)
+      }
     }
 
     'referenceReference {
@@ -2150,7 +2374,23 @@ object GenbankParserTestSuite extends TestSuite {
                     |  JOURNAL   Patent: EP 1650221-A2 1 26-APR-2006;
                     |            GlaxoSmithKline Biologicals SA (BE)
                     |FEATURES             Location/Qualifiers
-                    |""".stripMargin
+                    |"""
+          .stripMargin
+        val r = parse(GenbankParser.Reference, ref)
+      }
+
+      * - {
+        val ref =
+          """REFERENCE   1  (bases 1 to 77)
+            |  AUTHORS   Keith,G., Yusupov,M., Briand,C., Moras,D., Kern,D. and Brion C
+            |            [corrected to Briand,C.
+            |  TITLE     Sequence of tRNA(Asp) from Thermus thermophilus HB8
+            |  JOURNAL   Nucleic Acids Res. 21 (18), 4399 (1993)
+            |   PUBMED   7692402
+            |  REMARK    Erratum:[Nucleic Acids Res 1993 Sep 25;21(19):4658]
+            |REFERENCE   2  (bases 1 to 77)
+            |"""
+            .stripMargin
         val r = parse(GenbankParser.Reference, ref)
       }
     }
